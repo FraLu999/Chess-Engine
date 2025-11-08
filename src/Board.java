@@ -71,20 +71,57 @@ public class Board {
         return allBB;
     }
     
+    public long whitePiecesMask(){
+        long whiteMask = 0L;
+        for(int i = 0; i < 6; i++){
+            whiteMask |= pieceBB[i];
+        }
+        return whiteMask;
+    }
+    
+    public long blackPiecesMask(){
+        long blackMask = 0L;
+        for(int i = 6; i < 12; i++){
+            blackMask |= pieceBB[i];
+        }
+        return blackMask;
+    }
+    
     public boolean isOccupied(int square){
         long mask = 1L << square;
         return (mask & occupied()) != 0;
     }
     
-    public void movePiece(int fromSquare, int toSquare){
-        long fromMask = 1L << fromSquare;
-        long toMask   = 1L << toSquare;
-        for (int pieceIndex = 0; pieceIndex < size; pieceIndex++) {
-            // searching the right Bitboard
-            if((pieceBB[pieceIndex] & fromMask) != 0){
-                pieceBB[pieceIndex] &= ~fromMask;
-                pieceBB[pieceIndex] |= toMask;
-            }
-        }
+    private long getFromMask(long move){
+        
     }
+    
+    private long getToMask(long move){
+        
+    }
+    
+    private int getPromotionPiece(long move){
+        
+    }
+    
+    public void movePiece(long move){
+        /*long fromMask = 1L << fromSquare;
+        long toMask   = 1L << toSquare;*/
+        long fromMask = getFromMask(move);
+        long toMask   = getToMask(move);
+        int promotionPiece = getPromotionPiece(move);
+        int pieceIndex = -1;
+        for (int i = 0; i < size; i++) {
+            // searching the moved piece
+            if((pieceBB[i] & fromMask) != 0){
+                pieceIndex = i;
+            }
+            break;
+        }
+        if (pieceIndex == -1) throw new IllegalStateException("Moved Piece not found!");
+        // moving the piece now
+        pieceBB[pieceIndex] &= ~fromMask;
+        if(promotionPiece != -1){ pieceBB[pieceIndex] |= toMask; }
+        else{pieceBB[promotionPiece] |= toMask; }
+    }   
 }
