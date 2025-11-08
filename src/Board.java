@@ -215,4 +215,55 @@ public class Board {
             else                  pieceBB[promotionPiece] |= toMask;
         }
     }    
+    
+    public void undoMove(int move, boolean[] castleRight, int enpassentSquare, boolean whiteToMove){
+        int from           = getFrom(move);
+        int to             = getTo(move);
+        int flag           = getFlag(move);
+        int movedPiece     = getMovedPiece(move);
+        int capturedPiece  = getCapturedPiece(move);
+        int promotionPiece = getPromotionPiece(move);
+        this.castleRight   = castleRight;
+        this.enpassentSquare = enpassentSquare;
+        this.whiteToMove   = whiteToMove;
+        
+        long fromMask = 1L << from;
+        long toMask   = 1L << to;
+        
+        if(promotionPiece != 0) pieceBB[promotionPiece] &= ~toMask;
+        else pieceBB[movedPiece] &= ~toMask;
+        pieceBB[movedPiece] |= fromMask;
+        
+        if(flag == castled){
+           if(whiteToMove){
+                if(to == 2){
+                    pieceBB[whiteRooks] &= ~(1L << 3);
+                    pieceBB[whiteRooks] |= (1L << 0);
+                }
+                else{
+                    pieceBB[whiteRooks] &= ~(1L << 5);
+                    pieceBB[whiteRooks] |= (1L << 7);
+                }
+            }
+            else{
+                if(to == 58){
+                    pieceBB[blackRooks] &= ~(1L << 59);
+                    pieceBB[blackRooks] |= (1L << 56);
+                }
+                else{
+                    pieceBB[blackRooks] &= ~(1L << 61);
+                    pieceBB[blackRooks] |= (1L << 63);
+                }
+            } 
+        }
+        else{
+            if(flag == enpassent){
+                int capturedPawnSquare = whiteToMove ? to - 8 : to + 8;
+                pieceBB[capturedPiece] |= 1L << capturedPawnSquare;
+            }
+            else if(capturedPiece != 5){
+                pieceBB[capturedPiece] |= toMask;
+            }
+        }
+    }
 }
