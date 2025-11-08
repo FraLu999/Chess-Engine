@@ -37,12 +37,19 @@ public class Board {
     
     private boolean[] castleRight = new boolean[4]; 
     // Castle Rights are saved here: (0: 0-0-0 w; 1: 0-0 w; 2: 0-0-0 b; 3: 0-0 b)
+    // 0-0 : short castle and 0-0-0 : long castle
+    
+    private int enpassentSquare;
     
     public static final int whitePawns=0, whiteKnights=1, whiteBishops=2, whiteRooks=3, 
                             whiteQueens=4, whiteKing=5,
                             blackPawns=6, blackKnights=7, blackBishops=8, blackRooks=9,
                             blackQueens=10, blackKing=11, size=12;
     //indexes for each piece bitboard
+    
+    private final int captured=1, twoStepsMovedPawn=2, enpassent=3, castled=4;
+    
+    private final int pawn = 0, knight=1, bishop=2, rook=3, queen=4, king =5;
     
     public Board(){
         initialize();
@@ -92,36 +99,120 @@ public class Board {
         return (mask & occupied()) != 0;
     }
     
-    private long getFromMask(long move){
-        
+    public int getEnpassentSquare(){
+        return enpassentSquare;
     }
     
-    private long getToMask(long move){
-        
+    private int getFrom(int move){
+        //From Square
+        return move & 0x3F; 
     }
     
-    private int getPromotionPiece(long move){
-        
+    private int getTo(int move){
+        //End Square
+        return (move >>> 6) & 0x3F; 
     }
     
-    public void movePiece(long move){
-        /*long fromMask = 1L << fromSquare;
-        long toMask   = 1L << toSquare;*/
-        long fromMask = getFromMask(move);
-        long toMask   = getToMask(move);
+    private int getFlag(int move){
+        /*
+        0: normal move ; 1: Capture ; 2: pawn moved 2 squares forward;
+        3: en passent; 4: Castle; 
+        */
+        return (move >>> 12) & 0xF;
+    }
+    
+    private int getMovedPiece(int move){
+        /*
+        0: pawn; 1: knight ; 2: bishop ; 3: Rook ; 4: Queen ; 5: King
+        */
+        return (move >>> 16) & 0xF;
+    }
+    
+    private int getCapturedPiece(int move){
+        /*
+        0: pawn; 1: knight ; 2: bishop ; 3: Rook ; 4: Queen ; 5: no capture 
+        */
+        return (move >>> 20) & 0xF;
+    }
+    
+    private int getPromotionPiece(int move){
+        /*
+        0: no promotion ; 1: knight ; 2: bishop ; 3: Rook ; 4: Queen
+        */
+        return (move >>> 24) & 0xF;
+    }
+    
+    public void movePiece(int move){
+        int from           = getFrom(move);
+        int to             = getTo(move);
+        int flag           = getFlag(move);
+        int movedPiece     = getMovedPiece(move);
+        int capturedPiece  = getCapturedPiece(move);
         int promotionPiece = getPromotionPiece(move);
-        int pieceIndex = -1;
-        for (int i = 0; i < size; i++) {
-            // searching the moved piece
-            if((pieceBB[i] & fromMask) != 0){
-                pieceIndex = i;
+        
+        long fromMask = 1L << from;
+        long toMask = 1L << to;
+        
+        pieceBB[movedPiece] &= ~fromMask;
+        
+        if (flag == castled || movedPiece == king){
+            if(flag == castled || movedPiece == king){
+                if(whiteToMove){
+                    castleRight[0] = castleRight[1] = false;
+                    if(flag == castled){
+                        pieceBB[whiteKing] |= toMask;
+                        if(to == 2){
+                            pieceBB[whiteRooks] &= ~(1L << 0);
+                            pieceBB[whiteRooks] |= (1L << 3);
+                        }
+                        else if(to == 6){
+                            pieceBB[whiteRooks] &= ~(1L << 7);
+                            pieceBB[whiteRooks] |= (1L << 5);
+                        }
+                    }
+                }
+                else{
+                    castleRight[2] = castleRight[3] = false;
+                    if(flag == castled){
+                        pieceBB[blackKing] |= toMask;
+                        if(to == 58){
+                            pieceBB[blackRooks] &= ~(1L << 56);
+                            pieceBB[blackRooks] |= (1L << 59);
+                        }
+                        else if(to == 62){
+                            pieceBB[blackRooks] &= ~(1L << 63);
+                            pieceBB[blackRooks] |= (1L << 61);
+                        }
+                    }
+                }
             }
-            break;
         }
-        if (pieceIndex == -1) throw new IllegalStateException("Moved Piece not found!");
-        // moving the piece now
-        pieceBB[pieceIndex] &= ~fromMask;
-        if(promotionPiece != -1){ pieceBB[pieceIndex] |= toMask; }
-        else{pieceBB[promotionPiece] |= toMask; }
-    }   
+        else if(movedPiece == rook){
+            if(whiteToMove){
+                if(from == 0) castleRight[0] = false;
+                else if(from == 7) castleRight[1] = false;
+            }
+            else{
+                if(from == 56) castleRight[2] = false;
+                else if(from == 63) castleRight[3] = false;
+            }
+        }
+        
+        if(flag==twoStepsMovedPawn){ 
+            enpassentSquare = (from+to)/2;
+        }
+        
+        if(flag == enpassent){
+            int capturedPawnSquare = whiteToMove ? to - 8 : to + 8;
+            pieceBB[capturedPiece] &= ~(1L << capturedPawnSquare);
+        }
+        else if(capturedPiece != 5){
+            pieceBB[capturedPiece] &= ~toMask;
+        }
+        
+        if(flag != castled){
+            if(promotionPiece==0) pieceBB[movedPiece] |= toMask;
+            else                  pieceBB[promotionPiece] |= toMask;
+        }
+    }    
 }
