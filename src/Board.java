@@ -10,6 +10,9 @@
 public class Board {
     
     /*
+    
+        I use Little-Endian Rank-File mapping.
+    
         8 | 56 57 58 59 60 61 62 63
         7 | 48 49 50 51 52 53 54 55
         6 | 40 41 42 43 44 45 46 47
@@ -19,7 +22,8 @@ public class Board {
         2 | 8  9  10 11 12 13 14 15
         1 | 0  1  2  3  4  5  6  7
           -------------------------
-            a  b  c  d  e  f  g  h    
+            a  b  c  d  e  f  g  h   
+    
     */
     
     private long[] pieceBB = new long[12]; 
@@ -198,9 +202,8 @@ public class Board {
             }
         }
         
-        if(flag==twoStepsMovedPawn){ 
-            enpassentSquare = (from+to)/2;
-        }
+        if(flag==twoStepsMovedPawn) enpassentSquare = (from+to)/2;
+        else                        enpassentSquare = -1;
         
         if(flag == enpassent){
             int capturedPawnSquare = whiteToMove ? to - 8 : to + 8;
