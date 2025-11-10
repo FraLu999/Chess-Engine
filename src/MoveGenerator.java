@@ -26,57 +26,53 @@ public final class MoveGenerator {
         int rank = getRank(square);
         int file = getFile(square);
         int temp;
-        for (int r = rank-1, f = file-1; r >= 0 && f >= 0; r--, f--){
-            temp = getSquare(r,f);
-            if(((occupied & (1L << temp)) != 0)){
-                if(((myColor & (1L << temp)) == 0)){
-                    attacks |= (1L << temp);
+        
+        int[][] directions = {{-1,-1}, {-1,1}, {1,1}, {1,-1}};
+        
+        for(int[] dir : directions){
+            int r = rank + dir[0];
+            int f = file + dir[1];
+            while(r >= 0 && r < 8 && f >= 0 && f < 8){
+                temp = getSquare(r,f);
+                if((occupied & (1L << temp)) != 0){
+                    if((myColor & (1L << temp)) != 0) attacks |= (1L << temp);
+                    break;
                 }
-                break;
+                attacks |= (1L << temp);
+                r += dir[0];
+                f += dir[1];
             }
-            else attacks |= (1L << temp);
-        }
-        for (int r = rank-1, f = file+1; r >= 0 && f < 8; r--, f++){
-            temp = getSquare(r,f);
-            if(((occupied & (1L << temp)) != 0)){
-                if(((myColor & (1L << temp)) == 0)){
-                    attacks |= (1L << temp);
-                }
-                break;
-            }
-            else attacks |= (1L << temp);
-        }
-        for (int r = rank+1, f = file+1; r < 8 && f < 8; r++, f++){
-            temp = getSquare(r,f);
-            if(((occupied & (1L << temp)) != 0)){
-                if(((myColor & (1L << temp)) == 0)){
-                    attacks |= (1L << temp);
-                }
-                break;
-            }
-            else attacks |= (1L << temp);
-        }
-        for (int r = rank+1, f = file-1; r < 8 && f >= 0; r++, f--){
-            temp = getSquare(r,f);
-            if(((occupied & (1L << temp)) != 0)){
-                if(((myColor & (1L << temp)) == 0)){
-                    attacks |= (1L << temp);
-                }
-                break;
-            }
-            else attacks |= (1L << temp);
         }
         return attacks;
     }
     
-    public static long getRookAttacks(){
+    public static long getRookAttacks(int square, long occupied, long myColor){
         long attacks = 0L;
+        int rank = getRank(square);
+        int file = getFile(square);
+        int temp;
+        
+        int[][] directions = {{0,1}, {1,0}, {0,-1}, {-1,0}};
+        
+        for(int[] dir : directions){
+            int r = rank + dir[0];
+            int f = file + dir[1];
+            while(r >= 0 && r < 8 && f >= 0 && f < 8){
+                temp = getSquare(r,f);
+                if((occupied & (1L << temp)) != 0){
+                    if((myColor & (1L << temp)) != 0) attacks |= (1L << temp);
+                    break;
+                }
+                attacks |= (1L << temp);
+                r += dir[0];
+                f += dir[1];
+            }
+        }
         return attacks;
     }
     
-    public static long getQueenAttacks(){
-        long attacks = 0L;
-        return attacks;
+    public static long getQueenAttacks(int square, long occupied, long myColor){
+        return getRookAttacks(square,occupied,myColor) | getBishopAttacks(square,occupied,myColor);
     }
     
     public static long getKnightAttacks(){
